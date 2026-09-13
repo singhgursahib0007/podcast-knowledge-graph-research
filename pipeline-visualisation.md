@@ -16,6 +16,17 @@ A reader should take four things from one look.
    at each arrow is the substance.
 4. **Where the human is.** Review is a stage, not a footnote.
 
+## Rendered asset
+
+The primary diagram is rendered at `assets/pipeline-diagram.webp`, 1640 by 529,
+and is the figure used in the showcase. It follows the specification below, with
+the stages laid out horizontally rather than vertically because the rendered
+version carries its labels inside each stage rather than in a separate column.
+
+The source render is 1672 by 941 with large empty margins; the published crop is
+measured from the content bounds rather than eyeballed, and encoded as WebP at
+46 KB against 632 KB for the equivalent PNG, at 41.3 dB PSNR.
+
 ## Primary diagram: stage ladder
 
 Vertical, left aligned, one row per stage. Each row carries stage number, verb,

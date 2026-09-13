@@ -109,6 +109,16 @@ tr.ours .d.full{background:var(--ink)}
 
 /* ---------- diagrams ---------- */
 figure{margin:0}
+/* The diagram is a dark image on a light section, so it needs its own frame or
+   it reads as a hole punched in the page. Narrow screens scroll it rather than
+   shrinking a 3:1 figure into illegibility. */
+.figframe{overflow-x:auto;border-radius:18px;background:#0d0d0c;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.09),0 18px 40px rgba(10,10,10,.18)}
+.figframe img{display:block;width:100%;min-width:660px;height:auto}
+.artefacts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.artefacts span{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--muted);
+  padding:5px 11px;border:1px solid var(--line);border-radius:999px;background:var(--white)}
+.artefacts span b{color:var(--ink);font-weight:500}
 figcaption{margin-top:14px;font-size:13px;color:var(--muted);max-width:62ch}
 .dark figcaption{color:rgba(255,255,255,.5)}
 svg{display:block;width:100%;height:auto;overflow:visible}
@@ -297,35 +307,18 @@ footer{padding:34px clamp(26px,5vw,84px);background:var(--ink);color:rgba(255,25
   <h2>Pipeline architecture</h2>
   <p class="lede" style="margin-bottom:36px">Each stage writes an inspectable artefact to disk. This makes the pipeline auditable and gives the review stage a concrete object to check.</p>
   <figure>
-    <svg viewBox="0 0 760 330" role="img" aria-label="Five stage pipeline. Extract with FFmpeg produces mono MP3. Transcribe produces a transcript with segment times. Structure with an LLM produces timestamped markdown. Ingest with a constrained agent produces topics, evidence and edges. Review by a human produces the authoritative graph.">
-      <line x1="26" y1="30" x2="26" y2="284" stroke="rgba(10,10,10,.16)" stroke-width="1.5"/>
-      <g font-family="Manrope" font-size="13.5" font-weight="700" fill="var(--ink)">
-        <text x="54" y="35">EXTRACT</text><text x="54" y="93">TRANSCRIBE</text><text x="54" y="151">STRUCTURE</text>
-        <text x="54" y="209">INGEST</text><text x="54" y="267">REVIEW</text>
-      </g>
-      <g font-family="DM Sans" font-size="12.5" fill="var(--muted)">
-        <text x="54" y="53">FFmpeg, strip video, normalise to speech band</text>
-        <text x="54" y="111">Speech recognition in twenty minute chunks</text>
-        <text x="54" y="169">One LLM pass, sections and subsections</text>
-        <text x="54" y="227">Constrained agent, reuse before create</text>
-        <text x="54" y="285" fill="var(--ink)" font-weight="600">A person, holding final authority</text>
-      </g>
-      <g font-family="JetBrains Mono" font-size="11.5" fill="var(--muted)" text-anchor="end">
-        <text x="752" y="35">audio.mp3</text><text x="752" y="93">transcript.json</text>
-        <text x="752" y="151">episode.md</text><text x="752" y="209">graph writes</text>
-        <text x="752" y="267" fill="var(--ink)" font-weight="500">authoritative graph</text>
-      </g>
-      <g>
-        <circle cx="26" cy="30" r="6" fill="var(--ink)"/><circle cx="26" cy="88" r="6" fill="var(--ink)"/>
-        <circle cx="26" cy="146" r="6" fill="var(--ink)"/><circle cx="26" cy="204" r="6" fill="var(--ink)"/>
-        <circle cx="26" cy="262" r="9" fill="var(--lime)" stroke="var(--ink)" stroke-width="2"/>
-      </g>
-      <g stroke="rgba(10,10,10,.1)" stroke-width="1">
-        <line x1="54" y1="62" x2="752" y2="62"/><line x1="54" y1="120" x2="752" y2="120"/>
-        <line x1="54" y1="178" x2="752" y2="178"/><line x1="54" y1="236" x2="752" y2="236"/>
-      </g>
-    </svg>
-    <figcaption>Timestamps, not the transcript text, are the critical output of stage two. They are copied from transcript segments rather than generated, because a generated timestamp is an unverifiable citation.</figcaption>
+    <div class="figframe">
+      <img src="assets/pipeline-diagram.webp" width="1640" height="529" loading="lazy"
+           alt="Five stage pipeline read left to right. A video frame becomes an audio waveform, the waveform becomes a stack of timestamped segments, the segments become a cluster of coloured nodes, and the cluster resolves into a connected topic graph reviewed by a person. Curved arrows return from the graph back to the segments, showing each topic resolving to its source timestamp." />
+    </div>
+    <div class="artefacts">
+      <span>audio.mp3</span>
+      <span>transcript.json</span>
+      <span>episode.md</span>
+      <span>graph writes</span>
+      <span><b>reviewed graph</b></span>
+    </div>
+    <figcaption>Each stage writes the artefact above it to disk. Timestamps, not the transcript text, are the critical output of stage two: they are copied from transcript segments rather than generated, because a generated timestamp is an unverifiable citation. The returning arrows are the point of the design, since every topic in the graph resolves back to the second of audio that supports it.</figcaption>
   </figure>
 
   <div class="grid g3" style="margin-top:44px">
