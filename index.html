@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0a0a0a" />
+<title>Topic-based navigation for podcast archives</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230a0a0a'/%3E%3Cpath d='M17 26a10 10 0 010 12M25 20a18 18 0 010 24M35 13a27 27 0 010 38' fill='none' stroke='%23b8ff45' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E" />
+<style>
+:root{
+  --ink:#0a0a0a; --soft-ink:#171717; --paper:#f5f5f1; --white:#fff;
+  --lime:#b8ff45; --teal:#12b8b3; --muted:#707070;
+  --line:rgba(10,10,10,.13); --line-dark:rgba(255,255,255,.13);
+  --radius:22px; --ease:cubic-bezier(.22,1,.36,1);
+  --page:min(1180px,calc(100vw - 48px));
+}
+*{box-sizing:border-box}
+body{margin:0;background:#b7b7b7;color:var(--ink);
+  font-family:"DM Sans",-apple-system,BlinkMacSystemFont,sans-serif;font-size:16px;line-height:1.62;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:"Manrope",sans-serif;margin:0;letter-spacing:-.035em;line-height:1.08}
+p{margin:0 0 16px}
+a{color:inherit}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+
+.shell{width:var(--page);margin:20px auto;background:var(--paper);border-radius:28px;
+  box-shadow:0 30px 80px rgba(0,0,0,.22);overflow:clip;display:flow-root}
+section{padding:78px clamp(26px,5vw,84px)}
+.dark{background:var(--ink);color:var(--paper)}
+.dark h2,.dark h3{color:#fff}
+
+/* ---------- kickers + headings ---------- */
+.kicker{display:flex;align-items:center;gap:10px;margin:0 0 22px;
+  font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.kicker i{width:8px;height:8px;border-radius:50%;background:var(--teal);
+  box-shadow:0 0 0 5px rgba(18,184,179,.14)}
+.dark .kicker{color:rgba(255,255,255,.55)}
+.dark .kicker i{background:var(--lime);box-shadow:0 0 0 5px rgba(184,255,69,.14)}
+h2{font-size:clamp(28px,3.6vw,44px);font-weight:800;margin-bottom:18px}
+h3{font-size:19px;font-weight:700;margin-bottom:8px}
+.lede{font-size:17.5px;color:#3f3f3f;max-width:68ch}
+.dark .lede{color:rgba(255,255,255,.72)}
+mark{background:var(--lime);color:var(--ink);padding:0 .12em}
+
+/* ---------- hero ---------- */
+.hero{padding-top:68px;padding-bottom:56px}
+.hero h1{font-size:clamp(38px,6vw,74px);font-weight:800;margin-bottom:24px}
+/* A negative z-index pseudo element paints below the page card's own background,
+   so the accent never appeared. A gradient on the element paints behind its own
+   text with no stacking context to manage. */
+.hero h1 em{font-style:italic;white-space:nowrap;padding-inline:.06em;
+  background:linear-gradient(to top,var(--lime) 0 24%,transparent 24%)}
+.thesis{border-left:4px solid var(--lime);padding:2px 0 2px 20px;margin:30px 0 34px;
+  max-width:70ch;font-size:18px}
+.meta{display:flex;flex-wrap:wrap;gap:10px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;
+  background:var(--white);border:1px solid var(--line);font-size:13.5px;font-weight:500;
+  color:var(--ink)}
+.chip b{font-family:"Manrope",sans-serif}
+
+/* ---------- grids ---------- */
+.grid{display:grid;gap:16px}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:24px;
+  color:var(--ink)}
+.dark .card{background:rgba(255,255,255,.045);border-color:var(--line-dark);color:var(--paper)}
+.card .n{font-family:"Manrope",sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+  color:var(--muted);display:block;margin-bottom:12px}
+.dark .card .n{color:var(--lime)}
+.card p{font-size:14.5px;color:#4b4b4b;margin:0}
+.dark .card p{color:rgba(255,255,255,.66)}
+.card p+p{margin-top:10px}
+
+/* ---------- prior art rows ---------- */
+.row{display:grid;grid-template-columns:180px 1fr 150px;gap:22px;padding:22px 0;
+  border-top:1px solid var(--line-dark);align-items:start}
+.row:last-child{border-bottom:1px solid var(--line-dark)}
+.row h3{font-size:17px}
+.row .yr{font-size:12.5px;color:rgba(255,255,255,.42);font-family:"JetBrains Mono",monospace}
+.row p{font-size:14.5px;color:rgba(255,255,255,.68);margin:0}
+.verdict{font-size:13px;font-weight:600;color:var(--lime);text-align:right}
+
+/* ---------- table ---------- */
+/* The table keeps a light surface even inside a dark section, so it has to set
+   its own text colour. Without this the cells inherit the section's light type
+   and render near white on white. */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;
+  background:var(--white);color:var(--ink)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:13.5px}
+th,td{padding:13px 14px;text-align:left;border-bottom:1px solid var(--line)}
+th{font-family:"Manrope",sans-serif;font-size:11.5px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted);background:#fafaf7;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+tbody tr.ours{background:rgba(184,255,69,.16)}
+tbody tr.ours td{font-weight:600}
+td:first-child{font-weight:600;white-space:nowrap}
+td.cost{color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:12.5px}
+.d{display:inline-block;width:9px;height:9px;border-radius:50%}
+.d.full{background:var(--ink)}
+.d.part{background:var(--ink);opacity:.34}
+.d.none{background:transparent;box-shadow:inset 0 0 0 1.5px rgba(10,10,10,.24)}
+tr.ours .d.full{background:var(--ink)}
+.legend{display:flex;gap:18px;margin-top:14px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+
+/* ---------- diagrams ---------- */
+figure{margin:0}
+figcaption{margin-top:14px;font-size:13px;color:var(--muted);max-width:62ch}
+.dark figcaption{color:rgba(255,255,255,.5)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+
+/* ---------- limits ---------- */
+.limit{display:flex;gap:14px;padding:16px 0;border-top:1px solid var(--line)}
+.limit:first-of-type{border-top:0}
+.limit b{font-family:"Manrope",sans-serif;font-size:15px;display:block;margin-bottom:3px}
+.limit p{margin:0;font-size:14.5px;color:#4b4b4b}
+.limit .x{flex:none;width:22px;height:22px;border-radius:50%;background:rgba(10,10,10,.07);
+  display:grid;place-items:center;font-size:13px;color:var(--muted);margin-top:1px}
+
+/* ---------- reading list ---------- */
+.docs{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.doc{display:flex;justify-content:space-between;align-items:baseline;gap:14px;
+  padding:14px 18px;border:1px solid var(--line-dark);border-radius:12px;
+  text-decoration:none;transition:background .16s var(--ease),border-color .16s var(--ease)}
+.doc:hover{background:rgba(184,255,69,.09);border-color:rgba(184,255,69,.4)}
+.doc b{font-family:"Manrope",sans-serif;font-size:14.5px;font-weight:600}
+.doc span{font-size:12.5px;color:rgba(255,255,255,.45);text-align:right}
+
+footer{padding:34px clamp(26px,5vw,84px);background:var(--ink);color:rgba(255,255,255,.5);
+  font-size:13px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  border-top:1px solid var(--line-dark)}
+
+@media(max-width:900px){
+  .g3,.g2,.docs{grid-template-columns:1fr}
+  .row{grid-template-columns:1fr;gap:8px}
+  .verdict{text-align:left}
+  section{padding:54px 24px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- HERO -->
+<section class="hero">
+  <p class="kicker"><i></i> Research review · September 2026</p>
+  <h1>Topic-based navigation for <em>podcast archives</em></h1>
+  <p class="lede">Sixteen hours of recorded interviews hold about as much argument as a book, with almost no way to search or cite them. This document reviews how other systems handle that problem, where each one stops, and the design we arrived at.</p>
+  <p class="thesis"><b>Thesis.</b> Indexing recorded interviews by topic has always needed a person to listen and annotate. Most of that work can now be automated, while keeping the two things that made manual indexing worth doing: the publisher owns the index, and a person decides what goes into it.</p>
+  <div class="meta">
+    <span class="chip"><b>14</b> research documents</span>
+    <span class="chip"><b>4</b> system types compared</span>
+    <span class="chip"><b>7</b> comparison criteria</span>
+    <span class="chip"><b>6</b> planned measurements</span>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="dark">
+  <p class="kicker"><i></i> 01 · Access limitations</p>
+  <h2>Access limitations in recorded scholarship</h2>
+  <p class="lede" style="margin-bottom:32px">Written scholarship is addressable: located by section, cited by page, returned to by reference. Spoken scholarship has none of this. The atomic unit exposed to a listener is the episode, and the only navigation primitive is the seek bar.</p>
+  <div class="grid g3">
+    <div class="card">
+      <span class="n">LIMITATION 01</span>
+      <h3>Retrieval</h3>
+      <p>A listener who recalls a discussion of caste privilege in Western academia cannot determine which of sixteen episodes contains it, nor where inside it. Locating a ten minute passage approaches the cost of replaying the corpus.</p>
+    </div>
+    <div class="card">
+      <span class="n">LIMITATION 02</span>
+      <h3>Citation</h3>
+      <p>Audio resists precise citation, which depresses its use in subsequent work. Digital humanities scholarship identifies the absence of tooling for research and writing in audio as a structural constraint on the form.</p>
+    </div>
+    <div class="card">
+      <span class="n">LIMITATION 03</span>
+      <h3>Accumulation</h3>
+      <p>A theme raised in episode two and extended in episode eight is connected only in the memory of whoever heard both. The corpus does not become more useful as it grows. It becomes longer.</p>
+    </div>
+  </div>
+  <p class="lede" style="margin-top:34px">The historic bottleneck was transcription cost, and that has dissolved. The remaining bottleneck is structural: a transcript is a linearisation of audio, not an index of it. Converting eight thousand words of unpunctuated speech into an addressable structure requires judgments about topic boundary, salience and relation. These are interpretive tasks rather than transcription tasks.</p>
+</section>
+
+<!-- LANDSCAPE -->
+<section>
+  <p class="kicker"><i></i> 02 · Prior art</p>
+  <h2>Existing approaches</h2>
+  <p class="lede" style="margin-bottom:8px">Each addresses part of the problem. None combines the required capabilities.</p>
+</section>
+
+<section class="dark" style="padding-top:26px">
+  <div class="row">
+    <div><h3>Archival indexing</h3><p class="yr">OHMS · Univ. of Kentucky · 2014</p></div>
+    <div><p>Curator uploads a transcript, time synchronises it, and builds a time coded index. Delivers word level search connected to the exact moment in the recording. Exports XML into the institution's own system. <b>Segment level citation is archival prior art rather than a recent development.</b></p></div>
+    <div class="verdict">Owned and correctable.<br />Linear human cost.</div>
+  </div>
+  <div class="row">
+    <div><h3>Platform automation</h3><p class="yr">Apple · Spotify · YouTube</p></div>
+    <div><p>Automatic transcripts and chapters at zero marginal cost to the publisher. Apple derives chapters from transcripts, labels them, and permits editing. Coverage has been documented as uneven, and chapters are intra episode by construction.</p></div>
+    <div class="verdict">Free substrate.<br />No publisher owned output.</div>
+  </div>
+  <div class="row">
+    <div><h3>Consumer AI players</h3><p class="yr">Snipd · Airr · Fathom</p></div>
+    <div><p>Transcription, automatic chaptering, natural language search inside episodes, and highlight capture that exports to personal knowledge tools. Structure accrues to the individual listener. A second listener starts from zero.</p></div>
+    <div class="verdict">Optimised for consumption,<br />not curation.</div>
+  </div>
+  <div class="row">
+    <div><h3>Podcast knowledge graphs</h3><p class="yr">Dexa</p></div>
+    <div><p>The closest prior art. Combines several indexing techniques with a knowledge graph mapping <b>people, episodes and shows</b>, resolving context and synonymy rather than exact match. Validates both the premise and the mechanism: a graph over podcast content is not a novel proposal.</p></div>
+    <div class="verdict">Graphs entities.<br />Does not graph ideas.</div>
+  </div>
+  <p class="lede" style="margin-top:30px">The operative distinction is the choice of vertex. A graph of people and shows answers <i>who said what about X</i>. A graph of topics answers <i>what positions does this corpus contain on X, and how do they relate</i>, which is the question a scholarly interview series is designed to address.</p>
+</section>
+
+<!-- QUADRANT -->
+<section>
+  <p class="kicker"><i></i> 03 · Trade-off analysis</p>
+  <h2>Cost and ownership trade-off</h2>
+  <p class="lede" style="margin-bottom:34px">Archival tools provide ownership and correctability at high human cost. Consumer AI applications provide automation but retain the structure and expose no correction path. No surveyed system provides both.</p>
+  <figure>
+    <svg viewBox="0 0 760 420" role="img" aria-label="Two axis chart plotting marginal processing cost against ownership of the resulting structure. Archival tools occupy high cost and publisher owned. Consumer AI applications occupy low cost and vendor owned. The low cost publisher owned quadrant is otherwise empty.">
+      <defs>
+        <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0 1 L7 4.5 L0 8 z" fill="rgba(10,10,10,.4)"/>
+        </marker>
+      </defs>
+
+      <!-- Low marginal cost and publisher owned: the quadrant no surveyed system occupies -->
+      <rect x="62" y="230" width="326" height="148" rx="12" fill="rgba(184,255,69,.22)" stroke="var(--lime)" stroke-width="1.5"/>
+
+      <line x1="46" y1="222" x2="714" y2="222" stroke="rgba(10,10,10,.22)" stroke-width="1.2" marker-end="url(#ar)"/>
+      <line x1="392" y1="392" x2="392" y2="42" stroke="rgba(10,10,10,.22)" stroke-width="1.2" marker-end="url(#ar)"/>
+
+      <g font-family="Manrope" font-size="11.5" font-weight="700" fill="var(--muted)" letter-spacing="1">
+        <text x="62" y="210">PUBLISHER OWNED</text>
+        <text x="714" y="210" text-anchor="end">VENDOR OWNED</text>
+        <text x="404" y="46">HIGH MARGINAL COST</text>
+        <text x="404" y="404">LOW MARGINAL COST</text>
+      </g>
+
+      <circle cx="88" cy="104" r="8" fill="var(--ink)"/>
+      <text x="106" y="101" font-family="Manrope" font-size="15" font-weight="700" fill="var(--ink)">OHMS, archival indexing</text>
+      <text x="106" y="120" font-family="DM Sans" font-size="12.5" fill="var(--muted)">Curated and owned.</text>
+      <text x="106" y="137" font-family="DM Sans" font-size="12.5" fill="var(--muted)">Staff hours per hour of audio.</text>
+
+      <circle cx="470" cy="292" r="8" fill="var(--ink)"/>
+      <text x="488" y="289" font-family="Manrope" font-size="15" font-weight="700" fill="var(--ink)">Snipd, Fathom, Dexa</text>
+      <text x="488" y="308" font-family="DM Sans" font-size="12.5" fill="var(--muted)">Automated and low cost.</text>
+      <text x="488" y="325" font-family="DM Sans" font-size="12.5" fill="var(--muted)">Structure is vendor held.</text>
+
+      <circle cx="88" cy="292" r="11" fill="var(--lime)" stroke="var(--ink)" stroke-width="2"/>
+      <text x="108" y="289" font-family="Manrope" font-size="15" font-weight="800" fill="var(--ink)">This work</text>
+      <text x="108" y="308" font-family="DM Sans" font-size="12.5" fill="var(--muted)">Automated, owned, correctable.</text>
+    </svg>
+    <figcaption>Systems plotted on marginal processing cost against ownership of the resulting structure. The shaded region marks the low cost, publisher owned quadrant, which no surveyed system occupies.</figcaption>
+  </figure>
+</section>
+
+<!-- MATRIX -->
+<section class="dark">
+  <p class="kicker"><i></i> 04 · Comparison</p>
+  <h2>Comparison against defined criteria</h2>
+  <p class="lede" style="margin-bottom:30px">Criteria were defined before the comparison, so the axes are independent of the conclusion.</p>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>System</th><th>Segment<br />citation</th><th>Cross episode<br />structure</th><th>Semantic<br />retrieval</th>
+          <th>Publisher<br />ownership</th><th>Correct&shy;ability</th><th>Marginal<br />cost</th><th>Cumulative<br />value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Linear player</td><td><i class="d none"></i></td><td><i class="d none"></i></td><td><i class="d none"></i></td><td><i class="d full"></i></td><td><i class="d full"></i></td><td class="cost">nil</td><td><i class="d none"></i></td></tr>
+        <tr><td>Platform metadata</td><td><i class="d full"></i></td><td><i class="d none"></i></td><td><i class="d part"></i></td><td><i class="d none"></i></td><td><i class="d part"></i></td><td class="cost">nil</td><td><i class="d none"></i></td></tr>
+        <tr><td>Snipd</td><td><i class="d full"></i></td><td><i class="d none"></i></td><td><i class="d full"></i></td><td><i class="d none"></i></td><td><i class="d none"></i></td><td class="cost">low</td><td><i class="d part"></i></td></tr>
+        <tr><td>Airr, Fathom</td><td><i class="d full"></i></td><td><i class="d none"></i></td><td><i class="d full"></i></td><td><i class="d none"></i></td><td><i class="d none"></i></td><td class="cost">low</td><td><i class="d none"></i></td></tr>
+        <tr><td>Dexa</td><td><i class="d full"></i></td><td><i class="d part"></i></td><td><i class="d full"></i></td><td><i class="d none"></i></td><td><i class="d none"></i></td><td class="cost">low</td><td><i class="d part"></i></td></tr>
+        <tr><td>OHMS</td><td><i class="d full"></i></td><td><i class="d none"></i></td><td><i class="d part"></i></td><td><i class="d full"></i></td><td><i class="d full"></i></td><td class="cost">high</td><td><i class="d part"></i></td></tr>
+        <tr class="ours"><td>This work</td><td><i class="d full"></i></td><td><i class="d full"></i></td><td><i class="d full"></i></td><td><i class="d full"></i></td><td><i class="d full"></i></td><td class="cost">low</td><td><i class="d full"></i></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="legend" style="color:rgba(255,255,255,.5)">
+    <span><i class="d full" style="background:#fff"></i> full</span>
+    <span><i class="d part" style="background:#fff;opacity:.4"></i> partial</span>
+    <span><i class="d none" style="box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)"></i> absent</span>
+    <span style="margin-left:auto">Segment citation is solved across the field. Systems differ at cross episode structure.</span>
+  </div>
+</section>
+
+<!-- PIPELINE -->
+<section>
+  <p class="kicker"><i></i> 05 · Architecture</p>
+  <h2>Pipeline architecture</h2>
+  <p class="lede" style="margin-bottom:36px">Each stage writes an inspectable artefact to disk. This makes the pipeline auditable and gives the review stage a concrete object to check.</p>
+  <figure>
+    <svg viewBox="0 0 760 330" role="img" aria-label="Five stage pipeline. Extract with FFmpeg produces mono MP3. Transcribe produces a transcript with segment times. Structure with an LLM produces timestamped markdown. Ingest with a constrained agent produces topics, evidence and edges. Review by a human produces the authoritative graph.">
+      <line x1="26" y1="30" x2="26" y2="284" stroke="rgba(10,10,10,.16)" stroke-width="1.5"/>
+      <g font-family="Manrope" font-size="13.5" font-weight="700" fill="var(--ink)">
+        <text x="54" y="35">EXTRACT</text><text x="54" y="93">TRANSCRIBE</text><text x="54" y="151">STRUCTURE</text>
+        <text x="54" y="209">INGEST</text><text x="54" y="267">REVIEW</text>
+      </g>
+      <g font-family="DM Sans" font-size="12.5" fill="var(--muted)">
+        <text x="54" y="53">FFmpeg, strip video, normalise to speech band</text>
+        <text x="54" y="111">Speech recognition in twenty minute chunks</text>
+        <text x="54" y="169">One LLM pass, sections and subsections</text>
+        <text x="54" y="227">Constrained agent, reuse before create</text>
+        <text x="54" y="285" fill="var(--ink)" font-weight="600">A person, holding final authority</text>
+      </g>
+      <g font-family="JetBrains Mono" font-size="11.5" fill="var(--muted)" text-anchor="end">
+        <text x="752" y="35">audio.mp3</text><text x="752" y="93">transcript.json</text>
+        <text x="752" y="151">episode.md</text><text x="752" y="209">graph writes</text>
+        <text x="752" y="267" fill="var(--ink)" font-weight="500">authoritative graph</text>
+      </g>
+      <g>
+        <circle cx="26" cy="30" r="6" fill="var(--ink)"/><circle cx="26" cy="88" r="6" fill="var(--ink)"/>
+        <circle cx="26" cy="146" r="6" fill="var(--ink)"/><circle cx="26" cy="204" r="6" fill="var(--ink)"/>
+        <circle cx="26" cy="262" r="9" fill="var(--lime)" stroke="var(--ink)" stroke-width="2"/>
+      </g>
+      <g stroke="rgba(10,10,10,.1)" stroke-width="1">
+        <line x1="54" y1="62" x2="752" y2="62"/><line x1="54" y1="120" x2="752" y2="120"/>
+        <line x1="54" y1="178" x2="752" y2="178"/><line x1="54" y1="236" x2="752" y2="236"/>
+      </g>
+    </svg>
+    <figcaption>Timestamps, not the transcript text, are the critical output of stage two. They are copied from transcript segments rather than generated, because a generated timestamp is an unverifiable citation.</figcaption>
+  </figure>
+
+  <div class="grid g3" style="margin-top:44px">
+    <div class="card">
+      <span class="n">CONSTRAINT 01</span>
+      <h3>Existing graph supplied as context</h3>
+      <p>The ingesting agent receives every existing topic before it acts. Without this, each episode grows a parallel vocabulary and <i>casteism</i> and <i>caste discrimination</i> become separate vertices, halving the evidence on each.</p>
+    </div>
+    <div class="card">
+      <span class="n">CONSTRAINT 02</span>
+      <h3>Closed relation vocabulary</h3>
+      <p>Four labels only. Relation extraction is consistently the weaker operation in the literature, so the task is reduced from open generation to classification over a fixed vocabulary.</p>
+    </div>
+    <div class="card">
+      <span class="n">CONSTRAINT 03</span>
+      <h3>Idempotent writes</h3>
+      <p>Segments key on episode and start time. Re ingestion converges rather than duplicating, which is what makes correction and reprocessing safe to attempt.</p>
+    </div>
+  </div>
+</section>
+
+<!-- INVERSION -->
+<section class="dark">
+  <p class="kicker"><i></i> 06 · Navigation model</p>
+  <h2>Navigation by topic rather than episode</h2>
+  <figure>
+    <svg viewBox="0 0 760 250" role="img" aria-label="Left panel, the default: choose an episode then scan a seek bar. Right panel, the graph: choose a topic and receive every timestamped moment across episodes.">
+      <g>
+        <text x="0" y="16" font-family="Manrope" font-size="12" font-weight="700" fill="rgba(255,255,255,.45)" letter-spacing="1.4">DEFAULT</text>
+        <rect x="0" y="34" width="330" height="40" rx="8" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.14)"/>
+        <text x="16" y="59" font-family="DM Sans" font-size="13.5" fill="rgba(255,255,255,.75)">Episode 08 · 01:04:22</text>
+        <rect x="0" y="92" width="330" height="7" rx="3.5" fill="rgba(255,255,255,.13)"/>
+        <circle cx="86" cy="95.5" r="7" fill="rgba(255,255,255,.55)"/>
+        <text x="0" y="130" font-family="DM Sans" font-size="13" fill="rgba(255,255,255,.42)">Scan until the passage is found,</text>
+        <text x="0" y="149" font-family="DM Sans" font-size="13" fill="rgba(255,255,255,.42)">then repeat for every other episode.</text>
+      </g>
+      <line x1="376" y1="20" x2="376" y2="230" stroke="rgba(255,255,255,.13)"/>
+      <g transform="translate(420,0)">
+        <text x="0" y="16" font-family="Manrope" font-size="12" font-weight="700" fill="var(--lime)" letter-spacing="1.4">TOPIC GRAPH</text>
+        <circle cx="16" cy="52" r="11" fill="var(--lime)"/>
+        <text x="38" y="57" font-family="Manrope" font-size="15" font-weight="700" fill="#fff">Model minority myth</text>
+        <g font-family="JetBrains Mono" font-size="11.5">
+          <rect x="0" y="80" width="330" height="30" rx="7" fill="rgba(184,255,69,.11)" stroke="rgba(184,255,69,.3)"/>
+          <text x="12" y="99" fill="var(--lime)">S1E01 46:10</text>
+          <text x="104" y="99" font-family="DM Sans" fill="rgba(255,255,255,.75)">Complicity in colonisation of the self</text>
+          <rect x="0" y="118" width="330" height="30" rx="7" fill="rgba(184,255,69,.11)" stroke="rgba(184,255,69,.3)"/>
+          <text x="12" y="137" fill="var(--lime)">S1E08 36:10</text>
+          <text x="104" y="137" font-family="DM Sans" fill="rgba(255,255,255,.75)">The middle ground</text>
+          <rect x="0" y="156" width="330" height="30" rx="7" fill="rgba(184,255,69,.11)" stroke="rgba(184,255,69,.3)"/>
+          <text x="12" y="175" fill="var(--lime)">S1E08 47:10</text>
+          <text x="104" y="175" font-family="DM Sans" fill="rgba(255,255,255,.75)">Model minority as colonial extension</text>
+        </g>
+        <text x="0" y="212" font-family="DM Sans" font-size="13" fill="rgba(255,255,255,.42)">One idea, every occurrence, each resolving</text>
+        <text x="0" y="231" font-family="DM Sans" font-size="13" fill="rgba(255,255,255,.42)">to the second of audio that supports it.</text>
+      </g>
+    </svg>
+    <figcaption>Rather than selecting an episode and scanning for a topic, the reader selects a topic and receives every occurrence of it. Node size in the live graph encodes a composite of airtime and connectivity, so structurally central concepts are visually central.</figcaption>
+  </figure>
+</section>
+
+<!-- ACCURACY -->
+<section>
+  <p class="kicker"><i></i> 07 · Error and review</p>
+  <h2>Error sources and human review</h2>
+  <div class="grid g2" style="margin-bottom:32px">
+    <div class="card">
+      <h3>Transcription error</h3>
+      <p>Speech recognition approaches human accuracy on clean general domain English and degrades systematically on proper nouns, specialist terminology and non native accents. One specialist evaluation on dense proper noun content reported roughly four times the general domain error rate.</p>
+      <p><b>This corpus sits in the degraded regime:</b> scholar names, Sanskrit and Punjabi terminology, institutional references, remote audio, and speakers across Canadian and Indian English. Assuming benchmark accuracy here would be unsound.</p>
+    </div>
+    <div class="card">
+      <h3>Error propagation</h3>
+      <p>Entity extraction benchmarks above 0.95 F1 on expert annotated <i>written</i> text. Relation extraction is materially weaker. Neither figure accounts for transcription error entering upstream.</p>
+      <p><b>A misheard term produces a wrong topic, which attracts wrong evidence, which produces wrong edges.</b> The validation literature is consistent that language models complement human validation rather than replace it.</p>
+    </div>
+  </div>
+  <p class="lede"><mark>The material is scholars' positions on caste, race and marginalisation, attributed by name, on a public academic site.</mark> An extraction error misattributes a political and professional position to a named academic. The acceptable error rate for unreviewed publication is therefore close to zero, independent of benchmark performance.</p>
+  <p class="lede" style="margin-top:18px">Review must nonetheless cost less than authoring, or the system offers no advantage over curatorial indexing. Three properties make that true: the reviewer checks a proposal rather than a transcript, every assertion carries a deep link to the audio that produced it, and corrections write straight to a graph the publisher owns.</p>
+</section>
+
+<!-- LIMITS -->
+<section class="dark">
+  <p class="kicker"><i></i> 08 · Limitations</p>
+  <h2>Limitations</h2>
+  <p class="lede" style="margin-bottom:26px">Recorded here because each is verifiable by a reviewer and material to the scope of the claim.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h3 style="margin-bottom:14px">Where other systems perform better</h3>
+      <div style="color:rgba(255,255,255,.66);font-size:14.5px">
+        <p><b style="color:#fff">Catalogue breadth.</b> Dexa retrieves across many shows. This retrieves across one. For <i>which podcast discussed X</i>, Dexa wins outright.</p>
+        <p><b style="color:#fff">Zero setup.</b> Platform automation asks nothing of the publisher. This asks for a pipeline run and a review pass.</p>
+        <p><b style="color:#fff">Direct answers.</b> A conversational system synthesises a reply. This returns a map and its evidence, which is right for scholarship and wrong for a quick factual question.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:14px">Claims not yet substantiated</h3>
+      <div style="color:rgba(255,255,255,.66);font-size:14.5px">
+        <p><b style="color:#fff">The review surface is designed, not built.</b> The graph is editable today, but the purpose built ingestion review step does not exist. Until it does, human in the loop is architectural intent, not a demonstrated property.</p>
+        <p><b style="color:#fff">One corpus.</b> Sixteen episodes, one subject area, one interview format. Generalisation is unsupported without replication.</p>
+        <p><b style="color:#fff">Speaker diarisation is not integrated.</b> Attribution currently depends on structural cues rather than acoustic speaker identity.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EVALUATION -->
+<section>
+  <p class="kicker"><i></i> 09 · Evaluation</p>
+  <h2>Evaluation plan</h2>
+  <p class="lede" style="margin-bottom:30px">Six measures, specified in advance so the protocol is independent of the result.</p>
+  <div class="limit"><span class="x">1</span><div><b>Transcription accuracy on this corpus</b><p>Human transcribe six ten minute passages across both series. Report overall word error rate and proper noun error rate separately. The gap between them predicts downstream extraction error.</p></div></div>
+  <div class="limit"><span class="x">2</span><div><b>Timestamp fidelity</b><p>Sixty sampled boundaries. Median absolute offset under two seconds, ninety fifth percentile under five. Beyond five seconds a listener lands mid sentence and the citation loses credibility.</p></div></div>
+  <div class="limit"><span class="x">3</span><div><b>Extraction precision and recall</b><p>A domain reader independently indexes three episodes as a reference set. <b>Topic precision below 0.80 defeats the economic argument</b>, because review would then approach the cost of authoring.</p></div></div>
+  <div class="limit"><span class="x">4</span><div><b>Ontology stability</b><p>Ingest sequentially, recording topics created against topics reused. New vertex creation should decay as the graph matures. A flat curve indicates the reuse constraint is not binding.</p></div></div>
+  <div class="limit"><span class="x">5</span><div><b>Retrieval task performance</b><p>Twelve find the passage tasks, graph interface against transcript and scrub baseline, within subject and counterbalanced. <b>No significant improvement defeats the central claim</b> regardless of every other measure.</p></div></div>
+  <div class="limit"><span class="x">6</span><div><b>Review cost</b><p>Reviewer minutes per episode hour to reach publishable quality. Must run below roughly one third of the curatorial baseline to justify the pipeline over established archival practice.</p></div></div>
+</section>
+
+<!-- READING -->
+<section class="dark">
+  <p class="kicker"><i></i> 10 · Research record</p>
+  <h2>Research documents</h2>
+  <p class="lede" style="margin-bottom:28px">The research record is wiki linked Markdown in <code style="color:var(--lime)">research/</code>. Each page links back to the index.</p>
+  <div class="docs">
+    <a class="doc" href="README.md"><b>README</b><span>index and abstract</span></a>
+    <a class="doc" target="_blank" rel="noreferrer" href="https://github.com/singhgursahib0007/podcast-knowledge-graph-research/blob/main/problem-statement.md"><b>Problem statement</b><span>why audio resists retrieval</span></a>
+    <a class="doc" target="_blank" rel="noreferrer" href="https://github.com/singhgursahib0007/podcast-knowledge-graph-research/blob/main/prior-art-consumer-apps.md"><b>Prior art: consumer apps</b><span>Snipd, Airr, Fathom, Dexa</span></a>
+    <a class="doc" target="_blank" rel="noreferrer" href="https://github.com/singhgursahib0007/podcast-knowledge-graph-research/blob/main/prior-art-platforms.md"><b>Prior art: platforms</b><span>Apple, Spotify, YouTube</span></a>
+    <a class="doc" target="_blank" rel="noreferrer" href="https://github.com/singhgursahib0007/podcast-knowledge-graph-research/blob/main/prior-art-archives.md"><b>Prior art: archives</b><span>OHMS, digital humanities</span></a>
+    <a class="doc" target="_blank" rel="noreferrer" href="https://github.com/singhgursahib0007/podcast-knowledge-graph-research/blob/main/prior-art-llm-kg.md"><b>Prior art: LLM graphs</b><span>construction and validation</span></a>
+    <a class="doc" target="_blank" rel="noreferrer" href="https://github.com/singhgursahib0007/podcast-knowledge-graph-research/blob/main/comparison-matrix.md"><b>Comparison matrix</b><span>seven criteria, seven systems</span></a>
+    <a class="doc" target="_blank" rel="noreferrer" href="https://github.com/singhgursahib0007/podcast-knowledge-graph-research/blob/main/gap-analysis.md"><b>Gap analysis</b><span>the unoccupied quadrant</span></a>
+    <a class="doc" target="_blank" rel="noreferrer" href="https://github.com/singhgursahib0007/podcast-knowledge-graph-research/blob/main/our-architecture.md"><b>System architecture</b><span>five stages, rationale</span></a>
+    <a class="doc" target="_blank" rel="noreferrer" href="https://github.com/singhgursahib0007/podcast-knowledge-graph-research/blob/main/accuracy-and-review.md"><b>Accuracy and review</b><span>error sources, mitigations</span></a>
+    <a class="doc" target="_blank" rel="noreferrer" href="https://github.com/singhgursahib0007/podcast-knowledge-graph-research/blob/main/evaluation-plan.md"><b>Evaluation plan</b><span>six measures, threats</span></a>
+    <a class="doc" target="_blank" rel="noreferrer" href="https://github.com/singhgursahib0007/podcast-knowledge-graph-research/blob/main/paper-framing.md"><b>Paper framing</b><span>claims, structure, venues</span></a>
+    <a class="doc" target="_blank" rel="noreferrer" href="https://github.com/singhgursahib0007/podcast-knowledge-graph-research/blob/main/pipeline-visualisation.md"><b>Pipeline visualisation</b><span>diagram specification</span></a>
+    <a class="doc" target="_blank" rel="noreferrer" href="https://github.com/singhgursahib0007/podcast-knowledge-graph-research/blob/main/bibliography.md"><b>Bibliography</b><span>sources by page</span></a>
+  </div>
+</section>
+
+<footer>
+  <span>Research review · Social Justice Chatter Matters</span>
+  <span>The claim covers one podcast archive, where being able to cite and correct matters more than catalogue size.</span>
+</footer>
+
+</div>
+</body>
+</html>
